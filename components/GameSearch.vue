@@ -62,17 +62,22 @@
   <!-- <div v-for="game in displayedGames">{{ game }} <br /><br /></div> -->
 </template>
 
-<script setup lang="ts">
-import { ref } from "vue";
+<script setup>
+import { ref, computed, onMounted } from "vue";
 import useTruncate from "@/composables/useTruncate";
-import type { Game } from "@/types/Game"; // Adjust the path if necessary
 
 const supabase = useSupabaseClient();
 
-const searchQuery = ref<string>("");
-const searchResults = ref<any[]>([]);
-const popularGames = ref<any[]>([]);
-const loading = ref<boolean>(false);
+const searchQuery = ref("");
+
+const searchResults = ref([]);
+const popularGames = ref([]);
+
+const displayedGames = computed(() =>
+  searchResults.value.length ? searchResults.value : popularGames.value
+);
+
+const loading = ref(false);
 
 const { truncate } = useTruncate();
 
@@ -81,12 +86,6 @@ onMounted(() => {
   fetchPopularGames();
 });
 
-// Combine popular games and search results dynamically
-const displayedGames = computed(() =>
-  searchResults.value.length ? searchResults.value : popularGames.value
-);
-
-// Fetch popular games
 const fetchPopularGames = async () => {
   loading.value = true;
   try {
@@ -94,9 +93,8 @@ const fetchPopularGames = async () => {
     const data = await response.json();
 
     if (response.ok) {
-      popularGames.value = data; // Update popularGames array
-
-      await fetchGameStatus(); // Check collection and wishlist status for the results
+      popularGames.value = data;
+      await fetchGameStatus();
     } else {
       console.error("Error fetching popular games:", data.error);
       alert("Failed to fetch popular games.");
@@ -109,7 +107,6 @@ const fetchPopularGames = async () => {
   }
 };
 
-// Function to search for games
 const handleSearch = async () => {
   if (!searchQuery.value) {
     alert("Please enter a search query");
@@ -126,7 +123,7 @@ const handleSearch = async () => {
 
     if (response.ok) {
       searchResults.value = data;
-      await fetchGameStatus(); // Check collection and wishlist status for the results
+      await fetchGameStatus();
     } else {
       console.error("Search error:", data.error);
       alert("Failed to search for games");
@@ -139,94 +136,42 @@ const handleSearch = async () => {
   }
 };
 
-// Function to add a game to the collection
-const addToCollection = async (formData: any) => {
+const addToCollection = async (formData) => {
   const { igdbId, platforms, rating, progress, gameData } = formData;
 
   try {
-    // Step 1: Get the authenticated user
     const { data, error: userError } = await supabase.auth.getUser();
     const user = data?.user;
-    console.log("IGDB ID being added to collection:", igdbId, platforms);
 
     if (userError || !user?.id) {
-      console.error(
-        "User not authenticated:",
-        userError?.message || "No user ID found"
-      );
+      console.error("User not authenticated:", userError?.message);
       return;
     }
 
     const userId = user.id;
 
-    // Step 2: Check if the game is already in the collections table
-    const { data: existingInCollection, error: collectionError } =
-      await supabase
-        .from("collections")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("igdb_id", igdbId)
-        .maybeSingle();
-
-    if (collectionError && collectionError.code !== "PGRST116") {
-      console.error("Error checking for game in collections:", collectionError);
-      return;
-    }
-
-    console.log(existingInCollection);
+    const { data: existingInCollection } = await supabase
+      .from("collections")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("igdb_id", igdbId)
+      .maybeSingle();
 
     if (existingInCollection) {
       console.log(`Game with IGDB ID ${igdbId} is already in your collection.`);
       return;
     }
 
-    // Step 3: Check if the game is in the wishlists table
-    const { data: existingInWishlist, error: wishlistError } = await supabase
-      .from("wishlists")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("igdb_id", igdbId)
-      .single();
-
-    if (wishlistError && wishlistError.code !== "PGRST116") {
-      console.error(
-        "Error checking for game in wishlists:",
-        wishlistError.message
-      );
-      return;
-    }
-
-    // Step 4: Remove the game from wishlists if it exists
-    if (existingInWishlist) {
-      const { error: deleteError } = await supabase
-        .from("wishlists")
-        .delete()
-        .eq("user_id", userId)
-        .eq("igdb_id", igdbId)
-        .single();
-
-      if (deleteError) {
-        console.error(
-          "Error removing game from wishlists:",
-          deleteError.message
-        );
-        return;
-      }
-
-      console.log(`Game with IGDB ID ${igdbId} removed from your wishlist.`);
-    }
-
-    // Fetch HLTB data from the server endpoint
     const hltbData = await fetchHowLongToBeat(gameData.name);
-    // Step 5: Add the game to the collections table
+
     const { error: insertError } = await supabase.from("collections").insert([
       {
         user_id: userId,
         igdb_id: igdbId,
-        platforms: platforms,
-        rating: rating,
+        platforms,
+        rating,
         data: gameData,
-        progress: progress,
+        progress,
         how_long_to_beat: hltbData,
       },
     ]);
@@ -234,11 +179,7 @@ const addToCollection = async (formData: any) => {
     if (insertError) {
       console.error("Error adding game to collection:", insertError.message);
     } else {
-      console.log(
-        `Game with IGDB ID ${igdbId} successfully added to your collection.`
-      );
-
-      // Refresh statuses after adding the game
+      console.log(`Game with IGDB ID ${igdbId} successfully added.`);
       await fetchGameStatus();
     }
   } catch (err) {
@@ -246,85 +187,43 @@ const addToCollection = async (formData: any) => {
   }
 };
 
-const showModal = ref(false); // Modal visibility
-const selectedGame = ref<Game | []>([]); // Allow null or a valid Game object
+const showModal = ref(false); // Tracks modal visibility
+const selectedGame = ref(null); // Stores the selected game's data
 
-// Open the modal
-const openGameModal = (game: any) => {
-  console.log("Opening modal for game:", game);
-  selectedGame.value = game;
-  showModal.value = true;
+const openGameModal = (game) => {
+  selectedGame.value = game; // Set the selected game
+  showModal.value = true; // Open the modal
 };
 
-// Close the modal
 const closeModal = () => {
-  showModal.value = false;
-  selectedGame.value = [];
+  showModal.value = false; // Close the modal
+  selectedGame.value = null; // Reset the selected game
 };
 
-// Function to add a game to the wishlist
-const addToWishlist = async (igdbId: number) => {
+const addToWishlist = async (igdbId) => {
   try {
-    // Step 1: Get the authenticated user
     const { data, error: userError } = await supabase.auth.getUser();
     const user = data?.user;
 
     if (userError || !user?.id) {
-      console.error(
-        "User not authenticated:",
-        userError?.message || "No user ID found"
-      );
+      console.error("User not authenticated:", userError?.message);
       return;
     }
 
     const userId = user.id;
 
-    // Step 2: Check if the game is already in the collections table
-    const { data: existingInCollection, error: collectionError } =
-      await supabase
-        .from("collections")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("igdb_id", igdbId)
-        .single();
-
-    if (collectionError && collectionError.code !== "PGRST116") {
-      console.error(
-        "Error checking for game in collections:",
-        collectionError.message
-      );
-      return;
-    }
-
-    if (existingInCollection) {
-      console.log(
-        `Game with IGDB ID ${igdbId} is already in your collection and cannot be added to your wishlist.`
-      );
-      return;
-    }
-
-    // Step 3: Check if the game is already in the wishlists table
-    const { data: existingInWishlist, error: wishlistError } = await supabase
-      .from("wishlists")
+    const { data: existingInCollection } = await supabase
+      .from("collections")
       .select("id")
       .eq("user_id", userId)
       .eq("igdb_id", igdbId)
-      .single();
+      .maybeSingle();
 
-    if (wishlistError && wishlistError.code !== "PGRST116") {
-      console.error(
-        "Error checking for game in wishlists:",
-        wishlistError.message
-      );
+    if (existingInCollection) {
+      console.log(`Game is already in your collection.`);
       return;
     }
 
-    if (existingInWishlist) {
-      console.log(`Game with IGDB ID ${igdbId} is already in your wishlist.`);
-      return;
-    }
-
-    // Step 4: Add the game to the wishlists table
     const { error: insertError } = await supabase.from("wishlists").insert([
       {
         user_id: userId,
@@ -333,71 +232,70 @@ const addToWishlist = async (igdbId: number) => {
     ]);
 
     if (insertError) {
-      console.error("Error adding game to wishlist:", insertError.message);
+      console.error("Error adding to wishlist:", insertError.message);
     } else {
-      console.log(
-        `Game with IGDB ID ${igdbId} successfully added to your wishlist.`
-      );
-
-      // Refresh statuses after adding the game
+      console.log(`Game added to wishlist.`);
       await fetchGameStatus();
     }
   } catch (err) {
-    console.error("Unexpected error adding to wishlist:", err);
+    console.error("Unexpected error:", err);
   }
 };
 
-// Function to check if games are in collection or wishlist
 const fetchGameStatus = async () => {
-  const user = await supabase.auth.getUser();
-  if (!user.data?.user?.id) {
-    console.error("User not authenticated");
-    return;
-  }
-
-  const userId = user.data.user.id;
-  const gameIds = displayedGames.value.map((game) => game.id); // Extract IGDB IDs
-
-  // Batch query for collection and wishlist
-  const { data: collectionData } = await supabase
-    .from("collections")
-    .select("igdb_id")
-    .eq("user_id", userId)
-    .in("igdb_id", gameIds);
-
-  const { data: wishlistData } = await supabase
-    .from("wishlists")
-    .select("igdb_id")
-    .eq("user_id", userId)
-    .in("igdb_id", gameIds);
-
-  // Update the games list with status
-  displayedGames.value.forEach((game) => {
-    game.inCollection = collectionData?.some(
-      (item) => item.igdb_id === game.id
-    );
-    game.inWishlist = wishlistData?.some((item) => item.igdb_id === game.id);
-  });
-};
-
-const fetchHowLongToBeat = async (gameName: string) => {
-  return null; // Placeholder for now
   try {
-    const response = await fetch(
-      `/api/scrapeHowLongToBeat?name=${encodeURIComponent(gameName)}`
-    );
-    const data = await response.json();
+    const { data, error } = await supabase.auth.getUser();
 
-    if (data.error) {
-      console.warn(data.error);
-      return null;
+    if (error) {
+      console.error("Error fetching user:", error.message);
+      return;
     }
 
-    return data;
-  } catch (error) {
-    console.error("Error fetching HLTB data:", error);
-    return null;
+    const user = data?.user;
+
+    if (!user || !user.id) {
+      console.error("User not authenticated or user ID is missing");
+      return;
+    }
+
+    const userId = user.id;
+    const gameIds = displayedGames.value.map((game) => game.id);
+
+    const { data: collectionData, error: collectionError } = await supabase
+      .from("collections")
+      .select("igdb_id")
+      .eq("user_id", userId)
+      .in("igdb_id", gameIds);
+
+    if (collectionError) {
+      console.error("Error fetching collection data:", collectionError.message);
+      return;
+    }
+
+    const { data: wishlistData, error: wishlistError } = await supabase
+      .from("wishlists")
+      .select("igdb_id")
+      .eq("user_id", userId)
+      .in("igdb_id", gameIds);
+
+    if (wishlistError) {
+      console.error("Error fetching wishlist data:", wishlistError.message);
+      return;
+    }
+
+    displayedGames.value.forEach((game) => {
+      game.inCollection = collectionData?.some(
+        (item) => item.igdb_id === game.id
+      );
+      game.inWishlist = wishlistData?.some((item) => item.igdb_id === game.id);
+    });
+  } catch (err) {
+    console.error("Unexpected error in fetchGameStatus:", err);
   }
+};
+
+const fetchHowLongToBeat = async (gameName) => {
+  return null;
 };
 </script>
 

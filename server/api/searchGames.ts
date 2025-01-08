@@ -21,13 +21,16 @@ export default defineEventHandler(async (event) => {
     const response = await axios.post(
       API_URL,
       `
+      
       fields name, category, platforms.name, platforms.platform_logo.image_id, 
-             themes.name, genres.name, cover.image_id, slug, total_rating, 
-             aggregated_rating, rating_count, game_modes.name, 
-             player_perspectives.name, first_release_date, storyline, summary, 
+             themes.name, genres.name, cover.image_id, slug, total_rating, rating,
+             aggregated_rating, rating_count, game_modes.name, dlcs, expansions,
+             player_perspectives.name, first_release_date, release_dates.date, storyline, summary, 
              version_parent, parent_game, cover.url, screenshots.url;
       search "${searchQuery}";
-      limit 10;
+  
+      where version_parent = null & rating != null;
+      limit 25;
       `,
       {
         headers: {

@@ -1,0 +1,27 @@
+<template>
+  <footer
+    class="flex flex-col sm:flex-row gap-8 justify-between p-10 bg-base-200"
+  >
+    <!-- Brand -->
+    <aside>
+      <img alt="Logo" src="/logo.svg" class="" />
+      <small>Copyright © 2024 - All rights reserved</small>
+    </aside>
+
+    <!-- Socials -->
+    <nav class="flex gap-4">
+      <a class="btn btn-ghost btn-sm btn-circle">
+        <i class="fa-brands fa-github text-2xl"></i>
+      </a>
+      <a class="btn btn-ghost btn-sm btn-circle">
+        <i class="fa-brands fa-twitter text-2xl"></i>
+      </a>
+      <a class="btn btn-ghost btn-sm btn-circle">
+        <i class="fa-brands fa-facebook text-2xl"></i>
+      </a>
+      <a class="btn btn-ghost btn-sm btn-circle">
+        <i class="fa-brands fa-youtube text-2xl"></i>
+      </a>
+    </nav>
+  </footer>
+</template>

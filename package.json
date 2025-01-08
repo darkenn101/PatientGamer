@@ -7,24 +7,26 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "genTypes": "supabase gen types typescript --project-id bkfjsmdzsmvzmwmsplun > types/supabase.ts"
   },
   "dependencies": {
     "@nuxtjs/supabase": "^1.4.3",
     "@supabase/supabase-js": "^2.46.1",
     "@tailwindcss/forms": "^0.5.9",
     "axios": "^1.7.7",
-    "daisyui": "^4.12.14",
     "howlongtobeat": "^1.8.0",
     "nuxt": "^3.14.1592",
     "puppeteer": "^23.9.0",
     "sass": "^1.81.0",
     "vue": "latest",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "vue-smooth-dnd": "^0.8.1"
   },
   "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.2",
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.15"
+    "daisyui": "^4.12.20",
+    "postcss": "^8.4.49"
   }
 }

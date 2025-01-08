@@ -67,26 +67,30 @@
     </div>
   </div>
 </template>
-<script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import type { Game } from "@/types/Game";
+<script setup>
+definePageMeta({
+  layout: "admin", // Use the 'admin' layout
+});
+import { ref, computed, onMounted, watch } from "vue";
 
+// Supabase client
 const supabase = useSupabaseClient();
 
 // State
-const userId = ref(""); // Replace with the logged-in user's ID
-const currentPage = ref(1);
-const limit = 3; // Games per page
-const totalGames = ref(0);
-const searchQuery = ref("");
+const userId = ref(""); // User's ID
+const currentPage = ref(1); // Current page number
+const limit = 6; // Number of games per page
+const totalGames = ref(0); // Total number of games in the collection
+const searchQuery = ref(""); // Search query
 
-const collectionGames = ref<Game[]>([]); // Correctly type the collection array
+const collectionGames = ref([]); // Array of games from the collection
 
 // Fetch the collection for the current page
 const fetchCollection = async () => {
   try {
-    const offset = (currentPage.value - 1) * limit;
+    const offset = (currentPage.value - 1) * limit; // Calculate offset for pagination
 
+    // Fetch games from the collection table
     const { data, count, error } = await supabase
       .from("collections")
       .select(
@@ -98,45 +102,48 @@ const fetchCollection = async () => {
           platforms,
           rating,
           progress
-      `,
-        { count: "exact" }
+        `,
+        { count: "exact" } // Include total count of matching rows
       )
-      .eq("user_id", userId.value)
-      .ilike("data->>name", `%${searchQuery.value}%`) // Use the extracted 'name' field
-      .range(offset, offset + limit - 1);
+      .eq("user_id", userId.value) // Filter by user ID
+      .ilike("data->>name", `%${searchQuery.value}%`) // Search by name in JSONB column
+      .range(offset, offset + limit - 1); // Apply pagination
 
     if (error) {
       console.error("Error fetching collection:", error.message);
       return;
     }
 
-    collectionGames.value = data as unknown as Game[]; // Cast the data to the Game type
-    totalGames.value = count || 0;
+    collectionGames.value = data || []; // Assign fetched data to collectionGames
+    totalGames.value = count || 0; // Update total number of games
   } catch (err) {
     console.error("Unexpected error fetching collection:", err);
   }
 };
 
 // Computed properties for pagination
-const totalPages = computed(() => Math.ceil(totalGames.value / limit));
-const hasNextPage = computed(() => currentPage.value < totalPages.value);
-const hasPreviousPage = computed(() => currentPage.value > 1);
+const totalPages = computed(() => Math.ceil(totalGames.value / limit)); // Total pages
+const hasNextPage = computed(() => currentPage.value < totalPages.value); // Check for next page
+const hasPreviousPage = computed(() => currentPage.value > 1); // Check for previous page
 
-// Change page
-const goToPage = (page: number) => {
-  currentPage.value = page;
-  fetchCollection();
+// Navigate to a specific page
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    fetchCollection(); // Fetch collection for the new page
+  }
 };
 
-// Watch search query for real-time updates
+// Watch the search query for real-time updates
 watch(searchQuery, () => {
-  currentPage.value = 1; // Reset to first page when searching
-  fetchCollection();
+  currentPage.value = 1; // Reset to the first page when the query changes
+  fetchCollection(); // Fetch collection based on the new search query
 });
 
 // Fetch the initial collection on mount
 onMounted(async () => {
   try {
+    // Get the logged-in user's ID
     const { data, error } = await supabase.auth.getUser();
 
     if (error || !data?.user?.id) {
@@ -147,7 +154,7 @@ onMounted(async () => {
       return;
     }
 
-    userId.value = data.user.id;
+    userId.value = data.user.id; // Set the user's ID
     await fetchCollection(); // Fetch the initial collection
   } catch (err) {
     console.error("Unexpected error:", err);
