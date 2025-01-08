@@ -48,17 +48,17 @@
 
             <!-- Platforms -->
             <td>
-              {{ game.platforms?.join(", ") || "N/A" }}
+              {{ game.platforms?.join(', ') || 'N/A' }}
             </td>
 
             <!-- Rating -->
             <td>
-              {{ game.rating || "N/A" }}
+              {{ game.rating || 'N/A' }}
             </td>
 
             <!-- Current Progress -->
             <td>
-              {{ game.progress || "N/A" }}
+              {{ game.progress || 'N/A' }}
             </td>
 
             <!-- Actions -->
@@ -106,30 +106,30 @@
 </template>
 <script setup>
 definePageMeta({
-  layout: "admin", // Use the 'admin' layout
-});
+  layout: 'admin', // Use the 'admin' layout
+})
 
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from 'vue'
 
-const supabase = useSupabaseClient();
+const supabase = useSupabaseClient()
 
 // State
-const userId = ref(""); // User's ID
-const backlogGames = ref([]); // Games in the backlog
-const currentPage = ref(1); // Current page number
-const limit = 5; // Games per page
-const totalGames = ref(0); // Total number of backlog games
-const searchQuery = ref(""); // Search query
-const selectedProgressFilter = ref(""); // Progress filter
+const userId = ref('') // User's ID
+const backlogGames = ref([]) // Games in the backlog
+const currentPage = ref(1) // Current page number
+const limit = 5 // Games per page
+const totalGames = ref(0) // Total number of backlog games
+const searchQuery = ref('') // Search query
+const selectedProgressFilter = ref('') // Progress filter
 
 // Fetch backlog games
 const fetchBacklogGames = async () => {
   try {
-    const offset = (currentPage.value - 1) * limit; // Calculate offset for pagination
+    const offset = (currentPage.value - 1) * limit // Calculate offset for pagination
 
     // Query games in the backlog
     const { data, count, error } = await supabase
-      .from("collections")
+      .from('collections')
       .select(
         `
           id,
@@ -140,82 +140,82 @@ const fetchBacklogGames = async () => {
           rating,
           progress
         `,
-        { count: "exact" }
+        { count: 'exact' }
       )
-      .eq("user_id", userId.value) // Filter by user ID
-      .eq("progress", selectedProgressFilter.value) // Filter by progress
-      .ilike("data->>name", `%${searchQuery.value}%`) // Search by game name
-      .range(offset, offset + limit - 1); // Apply pagination
+      .eq('user_id', userId.value) // Filter by user ID
+      .eq('progress', selectedProgressFilter.value) // Filter by progress
+      .ilike('data->>name', `%${searchQuery.value}%`) // Search by game name
+      .range(offset, offset + limit - 1) // Apply pagination
 
     if (error) {
-      console.error("Error fetching backlog games:", error.message);
-      return;
+      console.error('Error fetching backlog games:', error.message)
+      return
     }
 
-    backlogGames.value = data || []; // Update backlog games
-    totalGames.value = count || 0; // Update total games count
+    backlogGames.value = data || [] // Update backlog games
+    totalGames.value = count || 0 // Update total games count
   } catch (err) {
-    console.error("Unexpected error fetching backlog games:", err);
+    console.error('Unexpected error fetching backlog games:', err)
   }
-};
+}
 
 // Computed properties for pagination
-const totalPages = computed(() => Math.ceil(totalGames.value / limit)); // Total pages
-const hasNextPage = computed(() => currentPage.value < totalPages.value); // Check for next page
-const hasPreviousPage = computed(() => currentPage.value > 1); // Check for previous page
+const totalPages = computed(() => Math.ceil(totalGames.value / limit)) // Total pages
+const hasNextPage = computed(() => currentPage.value < totalPages.value) // Check for next page
+const hasPreviousPage = computed(() => currentPage.value > 1) // Check for previous page
 
 // Change page
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-    fetchBacklogGames(); // Fetch backlog games for the new page
+    currentPage.value = page
+    fetchBacklogGames() // Fetch backlog games for the new page
   }
-};
+}
 
 // Update game progress
 const updateGameProgress = async (gameId, newProgress) => {
   try {
     const { error } = await supabase
-      .from("collections")
+      .from('collections')
       .update({ progress: newProgress })
-      .eq("id", gameId)
-      .eq("user_id", userId.value);
+      .eq('id', gameId)
+      .eq('user_id', userId.value)
 
     if (error) {
-      console.error("Error updating game progress:", error.message);
-      return;
+      console.error('Error updating game progress:', error.message)
+      return
     }
 
     // Refresh backlog games after update
-    fetchBacklogGames();
+    fetchBacklogGames()
   } catch (err) {
-    console.error("Unexpected error updating game progress:", err);
+    console.error('Unexpected error updating game progress:', err)
   }
-};
+}
 
 // Watch for search query or progress filter changes
 watch([searchQuery, selectedProgressFilter], () => {
-  currentPage.value = 1; // Reset to the first page
-  fetchBacklogGames();
-});
+  currentPage.value = 1 // Reset to the first page
+  fetchBacklogGames()
+})
 
 // Fetch backlog games on mount
 onMounted(async () => {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser()
 
     if (error || !data?.user?.id) {
       console.error(
-        "Error fetching user:",
-        error?.message || "No user ID found"
-      );
-      return;
+        'Error fetching user:',
+        error?.message || 'No user ID found'
+      )
+      return
     }
 
-    userId.value = data.user.id; // Set user ID
-    await fetchBacklogGames(); // Fetch initial backlog games
+    userId.value = data.user.id // Set user ID
+    await fetchBacklogGames() // Fetch initial backlog games
   } catch (err) {
-    console.error("Unexpected error:", err);
+    console.error('Unexpected error:', err)
   }
-});
+})
 </script>

@@ -8,7 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "genTypes": "supabase gen types typescript --project-id bkfjsmdzsmvzmwmsplun > types/supabase.ts"
+    "genTypes": "supabase gen types typescript --project-id bkfjsmdzsmvzmwmsplun > types/supabase.ts",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@nuxtjs/supabase": "^1.4.3",
@@ -27,6 +28,7 @@
     "@nuxtjs/tailwindcss": "^6.12.2",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.20",
-    "postcss": "^8.4.49"
+    "postcss": "^8.4.49",
+    "prettier": "^3.4.2"
   }
 }

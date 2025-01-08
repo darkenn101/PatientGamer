@@ -16,17 +16,17 @@
 <script setup>
 // Page Meta to apply middleware
 definePageMeta({
-  middleware: "auth",
-  layout: "admin", // Use the 'admin' layout
-});
+  middleware: 'auth',
+  layout: 'admin', // Use the 'admin' layout
+})
 
 // Ensure the user is logged in before accessing the dashboard
-const router = useRouter();
-const supabase = useSupabaseClient();
-const user = useSupabaseUser();
+const router = useRouter()
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 
 if (!user.value) {
-  router.push("/login");
+  router.push('/login')
 }
 </script>
 

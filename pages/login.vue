@@ -33,44 +33,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue'
 // Page Meta to apply middleware
 definePageMeta({
-  middleware: "auth",
-});
+  middleware: 'auth',
+})
 
-const email = ref<string>("");
-const password = ref<string>("");
-const supabase = useSupabaseClient();
-const router = useRouter(); // Initialize the router
+const email = ref<string>('')
+const password = ref<string>('')
+const supabase = useSupabaseClient()
+const router = useRouter() // Initialize the router
 
 const signIn = async () => {
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value,
-  });
+  })
   if (error) {
-    console.error("Sign in error:", error.message);
-    alert(error.message);
+    console.error('Sign in error:', error.message)
+    alert(error.message)
   } else {
     // Redirect to dashboard after successful sign in
-    router.push("/dashboard");
+    router.push('/dashboard')
   }
-};
+}
 
 const signUp = async () => {
   const { error } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
-  });
+  })
   if (error) {
-    console.error("Sign up error:", error.message);
-    alert(error.message);
+    console.error('Sign up error:', error.message)
+    alert(error.message)
   } else {
-    alert("Successfully signed up!");
-    router.push("/dashboard");
+    alert('Successfully signed up!')
+    router.push('/dashboard')
   }
-};
+}
 </script>
 
 <style scoped>

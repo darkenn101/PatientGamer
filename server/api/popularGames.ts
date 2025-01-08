@@ -1,22 +1,22 @@
-import { defineEventHandler } from "h3";
-import axios from "axios";
+import { defineEventHandler } from 'h3'
+import axios from 'axios'
 
 export default defineEventHandler(async () => {
-  const CLIENT_ID = process.env.IGDB_CLIENT_ID;
-  const ACCESS_TOKEN = process.env.IGDB_ACCESS_TOKEN;
-  const API_URL = "https://api.igdb.com/v4/games";
+  const CLIENT_ID = process.env.IGDB_CLIENT_ID
+  const ACCESS_TOKEN = process.env.IGDB_ACCESS_TOKEN
+  const API_URL = 'https://api.igdb.com/v4/games'
 
   if (!CLIENT_ID || !ACCESS_TOKEN) {
-    return { error: "Missing IGDB credentials in environment variables" };
+    return { error: 'Missing IGDB credentials in environment variables' }
   }
 
   function addMonths(date: Date, months: number) {
-    date.setMonth(date.getMonth() + months);
-    return date;
+    date.setMonth(date.getMonth() + months)
+    return date
   }
 
-  const datelimit = addMonths(new Date(), -12); // six months before now
-  const datetime = Math.round(datelimit.getTime() / 1000);
+  const datelimit = addMonths(new Date(), -12) // six months before now
+  const datetime = Math.round(datelimit.getTime() / 1000)
 
   try {
     const response = await axios.post(
@@ -33,15 +33,15 @@ export default defineEventHandler(async () => {
       `,
       {
         headers: {
-          "Client-ID": CLIENT_ID,
+          'Client-ID': CLIENT_ID,
           Authorization: `Bearer ${ACCESS_TOKEN}`,
         },
       }
-    );
+    )
 
-    return response.data;
+    return response.data
   } catch (error) {
-    console.error("IGDB popular games error:", error);
-    return { error: "Failed to fetch popular games from IGDB" };
+    console.error('IGDB popular games error:', error)
+    return { error: 'Failed to fetch popular games from IGDB' }
   }
-});
+})

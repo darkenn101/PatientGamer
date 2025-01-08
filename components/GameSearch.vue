@@ -36,15 +36,15 @@
           <p class="line-clamp-3">
             {{
               truncate(game.summary, 15) ||
-              "No summary available for this game."
+              'No summary available for this game.'
             }}
           </p>
           <div class="card-actions justify-end">
             <button class="btn btn-primary" @click="openGameModal(game)">
-              {{ game.inCollection ? "In Collection" : "Add to Collection" }}
+              {{ game.inCollection ? 'In Collection' : 'Add to Collection' }}
             </button>
             <button class="btn btn-secondary" @click="addToWishlist(game.id)">
-              {{ game.inWishlist ? "In Wishlist" : "Add to Wishlist" }}
+              {{ game.inWishlist ? 'In Wishlist' : 'Add to Wishlist' }}
             </button>
           </div>
         </div>
@@ -63,108 +63,108 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import useTruncate from "@/composables/useTruncate";
+import { ref, computed, onMounted } from 'vue'
+import useTruncate from '@/composables/useTruncate'
 
-const supabase = useSupabaseClient();
+const supabase = useSupabaseClient()
 
-const searchQuery = ref("");
+const searchQuery = ref('')
 
-const searchResults = ref([]);
-const popularGames = ref([]);
+const searchResults = ref([])
+const popularGames = ref([])
 
 const displayedGames = computed(() =>
   searchResults.value.length ? searchResults.value : popularGames.value
-);
+)
 
-const loading = ref(false);
+const loading = ref(false)
 
-const { truncate } = useTruncate();
+const { truncate } = useTruncate()
 
 onMounted(() => {
-  fetchGameStatus();
-  fetchPopularGames();
-});
+  fetchGameStatus()
+  fetchPopularGames()
+})
 
 const fetchPopularGames = async () => {
-  loading.value = true;
+  loading.value = true
   try {
-    const response = await fetch("/api/popularGames");
-    const data = await response.json();
+    const response = await fetch('/api/popularGames')
+    const data = await response.json()
 
     if (response.ok) {
-      popularGames.value = data;
-      await fetchGameStatus();
+      popularGames.value = data
+      await fetchGameStatus()
     } else {
-      console.error("Error fetching popular games:", data.error);
-      alert("Failed to fetch popular games.");
+      console.error('Error fetching popular games:', data.error)
+      alert('Failed to fetch popular games.')
     }
   } catch (error) {
-    console.error("Unexpected error fetching popular games:", error);
-    alert("An error occurred while fetching popular games.");
+    console.error('Unexpected error fetching popular games:', error)
+    alert('An error occurred while fetching popular games.')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const handleSearch = async () => {
   if (!searchQuery.value) {
-    alert("Please enter a search query");
-    return;
+    alert('Please enter a search query')
+    return
   }
 
-  loading.value = true;
+  loading.value = true
 
   try {
     const response = await fetch(
       `/api/searchGames?query=${encodeURIComponent(searchQuery.value)}`
-    );
-    const data = await response.json();
+    )
+    const data = await response.json()
 
     if (response.ok) {
-      searchResults.value = data;
-      await fetchGameStatus();
+      searchResults.value = data
+      await fetchGameStatus()
     } else {
-      console.error("Search error:", data.error);
-      alert("Failed to search for games");
+      console.error('Search error:', data.error)
+      alert('Failed to search for games')
     }
   } catch (error) {
-    console.error("Fetch error:", error);
-    alert("An error occurred while searching for games");
+    console.error('Fetch error:', error)
+    alert('An error occurred while searching for games')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const addToCollection = async (formData) => {
-  const { igdbId, platforms, rating, progress, gameData } = formData;
+  const { igdbId, platforms, rating, progress, gameData } = formData
 
   try {
-    const { data, error: userError } = await supabase.auth.getUser();
-    const user = data?.user;
+    const { data, error: userError } = await supabase.auth.getUser()
+    const user = data?.user
 
     if (userError || !user?.id) {
-      console.error("User not authenticated:", userError?.message);
-      return;
+      console.error('User not authenticated:', userError?.message)
+      return
     }
 
-    const userId = user.id;
+    const userId = user.id
 
     const { data: existingInCollection } = await supabase
-      .from("collections")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("igdb_id", igdbId)
-      .maybeSingle();
+      .from('collections')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('igdb_id', igdbId)
+      .maybeSingle()
 
     if (existingInCollection) {
-      console.log(`Game with IGDB ID ${igdbId} is already in your collection.`);
-      return;
+      console.log(`Game with IGDB ID ${igdbId} is already in your collection.`)
+      return
     }
 
-    const hltbData = await fetchHowLongToBeat(gameData.name);
+    const hltbData = await fetchHowLongToBeat(gameData.name)
 
-    const { error: insertError } = await supabase.from("collections").insert([
+    const { error: insertError } = await supabase.from('collections').insert([
       {
         user_id: userId,
         igdb_id: igdbId,
@@ -174,129 +174,129 @@ const addToCollection = async (formData) => {
         progress,
         how_long_to_beat: hltbData,
       },
-    ]);
+    ])
 
     if (insertError) {
-      console.error("Error adding game to collection:", insertError.message);
+      console.error('Error adding game to collection:', insertError.message)
     } else {
-      console.log(`Game with IGDB ID ${igdbId} successfully added.`);
-      await fetchGameStatus();
+      console.log(`Game with IGDB ID ${igdbId} successfully added.`)
+      await fetchGameStatus()
     }
   } catch (err) {
-    console.error("Unexpected error:", err);
+    console.error('Unexpected error:', err)
   }
-};
+}
 
-const showModal = ref(false); // Tracks modal visibility
-const selectedGame = ref(null); // Stores the selected game's data
+const showModal = ref(false) // Tracks modal visibility
+const selectedGame = ref(null) // Stores the selected game's data
 
 const openGameModal = (game) => {
-  selectedGame.value = game; // Set the selected game
-  showModal.value = true; // Open the modal
-};
+  selectedGame.value = game // Set the selected game
+  showModal.value = true // Open the modal
+}
 
 const closeModal = () => {
-  showModal.value = false; // Close the modal
-  selectedGame.value = null; // Reset the selected game
-};
+  showModal.value = false // Close the modal
+  selectedGame.value = null // Reset the selected game
+}
 
 const addToWishlist = async (igdbId) => {
   try {
-    const { data, error: userError } = await supabase.auth.getUser();
-    const user = data?.user;
+    const { data, error: userError } = await supabase.auth.getUser()
+    const user = data?.user
 
     if (userError || !user?.id) {
-      console.error("User not authenticated:", userError?.message);
-      return;
+      console.error('User not authenticated:', userError?.message)
+      return
     }
 
-    const userId = user.id;
+    const userId = user.id
 
     const { data: existingInCollection } = await supabase
-      .from("collections")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("igdb_id", igdbId)
-      .maybeSingle();
+      .from('collections')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('igdb_id', igdbId)
+      .maybeSingle()
 
     if (existingInCollection) {
-      console.log(`Game is already in your collection.`);
-      return;
+      console.log(`Game is already in your collection.`)
+      return
     }
 
-    const { error: insertError } = await supabase.from("wishlists").insert([
+    const { error: insertError } = await supabase.from('wishlists').insert([
       {
         user_id: userId,
         igdb_id: igdbId,
       },
-    ]);
+    ])
 
     if (insertError) {
-      console.error("Error adding to wishlist:", insertError.message);
+      console.error('Error adding to wishlist:', insertError.message)
     } else {
-      console.log(`Game added to wishlist.`);
-      await fetchGameStatus();
+      console.log(`Game added to wishlist.`)
+      await fetchGameStatus()
     }
   } catch (err) {
-    console.error("Unexpected error:", err);
+    console.error('Unexpected error:', err)
   }
-};
+}
 
 const fetchGameStatus = async () => {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser()
 
     if (error) {
-      console.error("Error fetching user:", error.message);
-      return;
+      console.error('Error fetching user:', error.message)
+      return
     }
 
-    const user = data?.user;
+    const user = data?.user
 
     if (!user || !user.id) {
-      console.error("User not authenticated or user ID is missing");
-      return;
+      console.error('User not authenticated or user ID is missing')
+      return
     }
 
-    const userId = user.id;
-    const gameIds = displayedGames.value.map((game) => game.id);
+    const userId = user.id
+    const gameIds = displayedGames.value.map((game) => game.id)
 
     const { data: collectionData, error: collectionError } = await supabase
-      .from("collections")
-      .select("igdb_id")
-      .eq("user_id", userId)
-      .in("igdb_id", gameIds);
+      .from('collections')
+      .select('igdb_id')
+      .eq('user_id', userId)
+      .in('igdb_id', gameIds)
 
     if (collectionError) {
-      console.error("Error fetching collection data:", collectionError.message);
-      return;
+      console.error('Error fetching collection data:', collectionError.message)
+      return
     }
 
     const { data: wishlistData, error: wishlistError } = await supabase
-      .from("wishlists")
-      .select("igdb_id")
-      .eq("user_id", userId)
-      .in("igdb_id", gameIds);
+      .from('wishlists')
+      .select('igdb_id')
+      .eq('user_id', userId)
+      .in('igdb_id', gameIds)
 
     if (wishlistError) {
-      console.error("Error fetching wishlist data:", wishlistError.message);
-      return;
+      console.error('Error fetching wishlist data:', wishlistError.message)
+      return
     }
 
     displayedGames.value.forEach((game) => {
       game.inCollection = collectionData?.some(
         (item) => item.igdb_id === game.id
-      );
-      game.inWishlist = wishlistData?.some((item) => item.igdb_id === game.id);
-    });
+      )
+      game.inWishlist = wishlistData?.some((item) => item.igdb_id === game.id)
+    })
   } catch (err) {
-    console.error("Unexpected error in fetchGameStatus:", err);
+    console.error('Unexpected error in fetchGameStatus:', err)
   }
-};
+}
 
 const fetchHowLongToBeat = async (gameName) => {
-  return null;
-};
+  return null
+}
 </script>
 
 <style scoped>

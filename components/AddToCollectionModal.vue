@@ -23,7 +23,7 @@
           <p v-if="selectedGame?.summary" class="mb-4">
             {{
               truncate(selectedGame.summary, 30) ||
-              "No summary available for this game."
+              'No summary available for this game.'
             }}
           </p>
           <p v-else class="mb-4">No summary available for this game.</p>
@@ -154,52 +154,52 @@
   </div>
 </template>
 <script setup>
-import { ref, defineProps, defineEmits, watch } from "vue";
-import useTruncate from "@/composables/useTruncate";
+import { ref, defineProps, defineEmits, watch } from 'vue'
+import useTruncate from '@/composables/useTruncate'
 
-const { truncate } = useTruncate();
+const { truncate } = useTruncate()
 
 // Props
 const props = defineProps({
   showModal: Boolean,
   selectedGame: Object, // Game object passed from parent
-});
+})
 
 // Emits
-const emit = defineEmits(["close", "submit"]);
+const emit = defineEmits(['close', 'submit'])
 // Local form state
-const localPlatforms = ref([]); // To store selected platforms
+const localPlatforms = ref([]) // To store selected platforms
 const localFormData = ref({
   rating: null,
-  progress: "",
-});
+  progress: '',
+})
 
-const dlcsAndExpansions = ref([]); // Store fetched DLC and expansions
-const selectedDlcs = ref([]); // Store user-selected DLC/expansions
+const dlcsAndExpansions = ref([]) // Store fetched DLC and expansions
+const selectedDlcs = ref([]) // Store user-selected DLC/expansions
 
 // Fetch DLC/expansion details from IGDB
 const fetchDlcsAndExpansions = async (ids) => {
   try {
-    const response = await fetch("/api/fetchDlc", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const response = await fetch('/api/fetchDlc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        endpoint: "games",
+        endpoint: 'games',
         ids,
-        fields: ["id", "name", "cover.image_id"],
+        fields: ['id', 'name', 'cover.image_id'],
       }),
-    });
+    })
 
     if (response.ok) {
-      const data = await response.json();
-      dlcsAndExpansions.value = data;
+      const data = await response.json()
+      dlcsAndExpansions.value = data
     } else {
-      console.error("Error fetching DLC/expansion details");
+      console.error('Error fetching DLC/expansion details')
     }
   } catch (error) {
-    console.error("Unexpected error:", error);
+    console.error('Unexpected error:', error)
   }
-};
+}
 
 // Fetch DLC and expansion details on mounted
 // onMounted(async () => {
@@ -221,42 +221,42 @@ watch(
   () => props.selectedGame,
   async (newGame) => {
     if (newGame?.dlcs?.length || newGame?.expansions?.length) {
-      await fetchDlcsAndExpansions([...newGame.dlcs, ...newGame.expansions]);
+      await fetchDlcsAndExpansions([...newGame.dlcs, ...newGame.expansions])
     } else {
-      dlcsAndExpansions.value = [];
+      dlcsAndExpansions.value = []
     }
   },
   { immediate: true }
-);
+)
 
 // Watch the `selectedGame` prop to update local platforms when it changes
 watch(
   () => props.selectedGame?.platforms,
   (newPlatforms) => {
     if (newPlatforms) {
-      localPlatforms.value = newPlatforms.map((p) => p.name); // Use platform names initially
+      localPlatforms.value = newPlatforms.map((p) => p.name) // Use platform names initially
     }
   },
   { immediate: true } // Ensure this runs when the component is mounted
-);
+)
 
 // Close the modal
 const close = () => {
-  emit("close");
-  localFormData.value = { rating: null, progress: "" };
-};
+  emit('close')
+  localFormData.value = { rating: null, progress: '' }
+}
 
 // Submit the form
 const submitForm = () => {
-  console.log("Submitting form...", props.selectedGame);
-  emit("submit", {
+  console.log('Submitting form...', props.selectedGame)
+  emit('submit', {
     igdbId: props.selectedGame?.id || null,
     platforms: localPlatforms.value,
     rating: localFormData.value?.rating,
     progress: localFormData.value?.progress,
     dlcs: selectedDlcs.value,
     gameData: props.selectedGame,
-  });
-  close();
-};
+  })
+  close()
+}
 </script>

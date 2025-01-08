@@ -17,7 +17,7 @@
         :key="game.id"
         class="card card-side bg-base-100 shadow-xl"
       >
-        <figure>
+        <figure class="w-[200px]">
           <img
             v-if="game.data.cover?.image_id"
             :src="`https://images.igdb.com/igdb/image/upload/t_cover_big/${game.data.cover?.image_id}.jpg`"
@@ -27,7 +27,7 @@
         </figure>
         <div class="card-body">
           <h2 class="card-title text-xl font-bold">{{ game.data.name }}</h2>
-          <p>{{ game.data.summary || "No summary available." }}</p>
+          <p>{{ game.data.summary || 'No summary available.' }}</p>
           <p>
             <strong>Platforms:</strong>
             <span v-if="game.platforms?.length">
@@ -41,8 +41,8 @@
             </span>
             <span v-else>N/A</span>
           </p>
-          <p><strong>Progress:</strong> {{ game.progress || "N/A" }}</p>
-          <p><strong>Rating:</strong> {{ game.rating || "N/A" }}</p>
+          <p><strong>Progress:</strong> {{ game.progress || 'N/A' }}</p>
+          <p><strong>Rating:</strong> {{ game.rating || 'N/A' }}</p>
         </div>
       </div>
     </div>
@@ -68,31 +68,31 @@
   </div>
 </template>
 <script setup>
+import { ref, computed, onMounted, watch } from 'vue'
 definePageMeta({
-  layout: "admin", // Use the 'admin' layout
-});
-import { ref, computed, onMounted, watch } from "vue";
+  layout: 'admin', // Use the 'admin' layout
+})
 
 // Supabase client
-const supabase = useSupabaseClient();
+const supabase = useSupabaseClient()
 
 // State
-const userId = ref(""); // User's ID
-const currentPage = ref(1); // Current page number
-const limit = 6; // Number of games per page
-const totalGames = ref(0); // Total number of games in the collection
-const searchQuery = ref(""); // Search query
+const userId = ref('') // User's ID
+const currentPage = ref(1) // Current page number
+const limit = 6 // Number of games per page
+const totalGames = ref(0) // Total number of games in the collection
+const searchQuery = ref('') // Search query
 
-const collectionGames = ref([]); // Array of games from the collection
+const collectionGames = ref([]) // Array of games from the collection
 
 // Fetch the collection for the current page
 const fetchCollection = async () => {
   try {
-    const offset = (currentPage.value - 1) * limit; // Calculate offset for pagination
+    const offset = (currentPage.value - 1) * limit // Calculate offset for pagination
 
     // Fetch games from the collection table
     const { data, count, error } = await supabase
-      .from("collections")
+      .from('collections')
       .select(
         `
           id,
@@ -103,61 +103,61 @@ const fetchCollection = async () => {
           rating,
           progress
         `,
-        { count: "exact" } // Include total count of matching rows
+        { count: 'exact' } // Include total count of matching rows
       )
-      .eq("user_id", userId.value) // Filter by user ID
-      .ilike("data->>name", `%${searchQuery.value}%`) // Search by name in JSONB column
-      .range(offset, offset + limit - 1); // Apply pagination
+      .eq('user_id', userId.value) // Filter by user ID
+      .ilike('data->>name', `%${searchQuery.value}%`) // Search by name in JSONB column
+      .range(offset, offset + limit - 1) // Apply pagination
 
     if (error) {
-      console.error("Error fetching collection:", error.message);
-      return;
+      console.error('Error fetching collection:', error.message)
+      return
     }
 
-    collectionGames.value = data || []; // Assign fetched data to collectionGames
-    totalGames.value = count || 0; // Update total number of games
+    collectionGames.value = data || [] // Assign fetched data to collectionGames
+    totalGames.value = count || 0 // Update total number of games
   } catch (err) {
-    console.error("Unexpected error fetching collection:", err);
+    console.error('Unexpected error fetching collection:', err)
   }
-};
+}
 
 // Computed properties for pagination
-const totalPages = computed(() => Math.ceil(totalGames.value / limit)); // Total pages
-const hasNextPage = computed(() => currentPage.value < totalPages.value); // Check for next page
-const hasPreviousPage = computed(() => currentPage.value > 1); // Check for previous page
+const totalPages = computed(() => Math.ceil(totalGames.value / limit)) // Total pages
+const hasNextPage = computed(() => currentPage.value < totalPages.value) // Check for next page
+const hasPreviousPage = computed(() => currentPage.value > 1) // Check for previous page
 
 // Navigate to a specific page
 const goToPage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-    fetchCollection(); // Fetch collection for the new page
+    currentPage.value = page
+    fetchCollection() // Fetch collection for the new page
   }
-};
+}
 
 // Watch the search query for real-time updates
 watch(searchQuery, () => {
-  currentPage.value = 1; // Reset to the first page when the query changes
-  fetchCollection(); // Fetch collection based on the new search query
-});
+  currentPage.value = 1 // Reset to the first page when the query changes
+  fetchCollection() // Fetch collection based on the new search query
+})
 
 // Fetch the initial collection on mount
 onMounted(async () => {
   try {
     // Get the logged-in user's ID
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser()
 
     if (error || !data?.user?.id) {
       console.error(
-        "Error fetching user:",
-        error?.message || "No user ID found"
-      );
-      return;
+        'Error fetching user:',
+        error?.message || 'No user ID found'
+      )
+      return
     }
 
-    userId.value = data.user.id; // Set the user's ID
-    await fetchCollection(); // Fetch the initial collection
+    userId.value = data.user.id // Set the user's ID
+    await fetchCollection() // Fetch the initial collection
   } catch (err) {
-    console.error("Unexpected error:", err);
+    console.error('Unexpected error:', err)
   }
-});
+})
 </script>

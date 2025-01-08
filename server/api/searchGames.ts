@@ -1,20 +1,20 @@
-import { defineEventHandler, getQuery } from "h3";
-import axios from "axios";
+import { defineEventHandler, getQuery } from 'h3'
+import axios from 'axios'
 
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const searchQuery = query.query as string;
+  const query = getQuery(event)
+  const searchQuery = query.query as string
 
-  const CLIENT_ID = process.env.IGDB_CLIENT_ID;
-  const ACCESS_TOKEN = process.env.IGDB_ACCESS_TOKEN;
-  const API_URL = "https://api.igdb.com/v4/games";
+  const CLIENT_ID = process.env.IGDB_CLIENT_ID
+  const ACCESS_TOKEN = process.env.IGDB_ACCESS_TOKEN
+  const API_URL = 'https://api.igdb.com/v4/games'
 
   if (!searchQuery) {
-    return { error: "No search query provided" };
+    return { error: 'No search query provided' }
   }
 
   if (!CLIENT_ID || !ACCESS_TOKEN) {
-    return { error: "Missing IGDB credentials in environment variables" };
+    return { error: 'Missing IGDB credentials in environment variables' }
   }
 
   try {
@@ -34,15 +34,15 @@ export default defineEventHandler(async (event) => {
       `,
       {
         headers: {
-          "Client-ID": CLIENT_ID,
+          'Client-ID': CLIENT_ID,
           Authorization: `Bearer ${ACCESS_TOKEN}`,
         },
       }
-    );
+    )
 
-    return response.data;
+    return response.data
   } catch (error) {
-    console.error("IGDB search error:", error);
-    return { error: "Failed to fetch data from IGDB" };
+    console.error('IGDB search error:', error)
+    return { error: 'Failed to fetch data from IGDB' }
   }
-});
+})
