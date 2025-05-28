@@ -15,7 +15,7 @@ export default defineEventHandler(async () => {
     return date
   }
 
-  const datelimit = addMonths(new Date(), -12) // six months before now
+  const datelimit = addMonths(new Date(), -12) // 12 months before now
   const datetime = Math.round(datelimit.getTime() / 1000)
 
   try {
@@ -23,12 +23,12 @@ export default defineEventHandler(async () => {
       API_URL,
       `
       fields name, category, platforms.name, platforms.platform_logo.image_id, 
-             themes.name, genres.name, cover.image_id, slug, total_rating, 
-             aggregated_rating, rating_count, game_modes.name, 
-             player_perspectives.name, first_release_date, storyline, summary, 
+             themes.name, genres.name, cover.image_id, slug, total_rating, rating,
+             aggregated_rating, rating_count, game_modes.name, dlcs, expansions,
+             player_perspectives.name, first_release_date, release_dates.date, storyline, summary, 
              version_parent, parent_game, cover.url, screenshots.url;
-      where platforms = (48,6) & first_release_date > ${datetime} & aggregated_rating >= 80 & rating_count > 20;
-      sort aggregated_rating desc;
+      where platforms = (48,6) & first_release_date > ${datetime} & aggregated_rating >= 80 & rating_count > 20 & category = 0;
+      sort rating desc;
       limit 21;
       `,
       {

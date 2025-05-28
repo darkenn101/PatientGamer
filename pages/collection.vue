@@ -28,21 +28,16 @@
         <div class="card-body">
           <h2 class="card-title text-xl font-bold">{{ game.data.name }}</h2>
           <p>{{ game.data.summary || 'No summary available.' }}</p>
-          <p>
-            <strong>Platforms:</strong>
-            <span v-if="game.platforms?.length">
-              <span
-                v-for="(platform, index) in game.platforms"
-                :key="platform.id"
-              >
-                {{ platform.name
-                }}<span v-if="index < game.platforms.length - 1">, </span>
-              </span>
-            </span>
-            <span v-else>N/A</span>
-          </p>
-          <p><strong>Progress:</strong> {{ game.progress || 'N/A' }}</p>
-          <p><strong>Rating:</strong> {{ game.rating || 'N/A' }}</p>
+
+          <!-- Edit and Delete Buttons -->
+          <div class="mt-4 flex space-x-2">
+            <button class="btn btn-primary btn-sm" @click="editGame(game.id)">
+              Edit
+            </button>
+            <button class="btn btn-error btn-sm" @click="deleteGame(game.id)">
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -66,7 +61,18 @@
       </button>
     </div>
   </div>
+  {{ isModalOpen }}
+  <AddToCollectionModal
+    v-if="isModalOpen"
+    :showModal="isModalOpen"
+    :mode="modalMode"
+    :selectedGame="selectedGame"
+    :gameToEdit="gameBeingEdited"
+    @close="isModalOpen = false"
+    @submit="handleGameSubmit"
+  />
 </template>
+
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 definePageMeta({
@@ -95,7 +101,7 @@ const fetchCollection = async () => {
       .from('collections')
       .select(
         `
-          id,
+          id, 
           user_id,
           igdb_id,
           data,
@@ -160,4 +166,32 @@ onMounted(async () => {
     console.error('Unexpected error:', err)
   }
 })
+
+// Edit and Delete functions
+const isEditModalOpen = ref(false)
+const gameBeingEdited = ref(null)
+
+const editGame = (gameId) => {
+  const game = collectionGames.value.find((g) => g.id === gameId)
+  gameBeingEdited.value = { ...game }
+  isEditModalOpen.value = true
+}
+
+const handleGameUpdate = async (updatedGame) => {
+  // Update the game in Supabase
+  await supabase.from('games').update(updatedGame).eq('id', updatedGame.id)
+
+  // Update local collection
+  const index = collectionGames.value.findIndex((g) => g.id === updatedGame.id)
+  if (index !== -1) collectionGames.value[index] = updatedGame
+
+  isEditModalOpen.value = false
+}
+
+const deleteGame = (gameId) => {
+  console.log(`Delete game with ID: ${gameId}`)
+  collectionGames.value = collectionGames.value.filter(
+    (game) => game.id !== gameId
+  )
+}
 </script>

@@ -15,8 +15,11 @@
         <!-- Game Information and Form -->
         <div class="w-full md:w-2/3 pl-0 md:pl-6 mt-6 md:mt-0">
           <h2 class="font-bold text-lg mb-4">
-            Add {{ selectedGame?.name }} to Collection
-            {{ selectedGame?.rating }}
+            {{
+              mode === 'edit'
+                ? `Edit ${gameToEdit?.name}`
+                : `Add ${selectedGame?.name} to Collection`
+            }}
             <!-- 
             {{ selectedGame }} -->
           </h2>
@@ -52,7 +55,7 @@
             </div>
 
             <!-- DLC and Expansions -->
-            <label class="label mt-4">
+            <label class="label mt-4" v-if="dlcsAndExpansions.length">
               <span class="label-text">DLC and Expansions</span>
             </label>
             <div class="grid grid-cols-2 gap-4">
@@ -131,10 +134,13 @@
               v-model="localFormData.progress"
               class="select select-bordered w-full"
             >
+              <option value="">Select Progress</option>
+              <option value="Backlog">Backlog</option>
               <option value="Playing">Playing</option>
+              <option value="Unplayed DLC">Unplayed DLC</option>
               <option value="Completed">Completed</option>
               <option value="Replay">Replay</option>
-              <option value="Backlog">Backlog</option>
+              <option value="Paused">Paused</option>
               <option value="Abandoned">Abandoned</option>
             </select>
 
@@ -144,7 +150,7 @@
                 Cancel
               </button>
               <button type="submit" class="btn btn-primary">
-                Add to Collection
+                {{ mode === 'edit' ? 'Save Changes' : 'Add to Collection' }}
               </button>
             </div>
           </form>
@@ -162,7 +168,9 @@ const { truncate } = useTruncate()
 // Props
 const props = defineProps({
   showModal: Boolean,
-  selectedGame: Object, // Game object passed from parent
+  mode: { type: String, default: 'add' }, // 'add' or 'edit'
+  selectedGame: Object, // Used for "add" mode
+  gameToEdit: Object, // Used for "edit" mode
 })
 
 // Emits
@@ -202,19 +210,19 @@ const fetchDlcsAndExpansions = async (ids) => {
 }
 
 // Fetch DLC and expansion details on mounted
-// onMounted(async () => {
-//   console.log("Selected Game:", props.selectedGame.dlcs);
-//   if (
-//     props.selectedGame?.dlcs?.length ||
-//     props.selectedGame?.expansions?.length
-//   ) {
-//     const ids = [
-//       ...(props.selectedGame.dlcs || []),
-//       ...(props.selectedGame.expansions || []),
-//     ];
-//     await fetchDlcsAndExpansions(ids);
-//   }
-// });
+onMounted(async () => {
+  console.log('Selected Game:', props.selectedGame)
+  if (
+    props.selectedGame?.dlcs?.length ||
+    props.selectedGame?.expansions?.length
+  ) {
+    const ids = [
+      ...(props.selectedGame.dlcs || []),
+      ...(props.selectedGame.expansions || []),
+    ]
+    await fetchDlcsAndExpansions(ids)
+  }
+})
 
 // Watch `selectedGame` to fetch DLC/expansion details
 watch(
