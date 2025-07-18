@@ -47,7 +47,7 @@
                   <input
                     type="checkbox"
                     class="toggle toggle-primary"
-                    :value="platform"
+                    :value="platform.name"
                     v-model="localPlatforms"
                   />
                 </label>
@@ -237,15 +237,16 @@ watch(
   { immediate: true }
 )
 
-// Watch the `selectedGame` prop to update local platforms when it changes
+// Watch the `selectedGame` prop to reset local platforms when it changes
 watch(
-  () => props.selectedGame?.platforms,
-  (newPlatforms) => {
-    if (newPlatforms) {
-      localPlatforms.value = newPlatforms.map((p) => p.name) // Use platform names initially
+  () => props.selectedGame,
+  (newGame) => {
+    if (newGame?.platforms) {
+      // Default: none selected
+      localPlatforms.value = []
     }
   },
-  { immediate: true } // Ensure this runs when the component is mounted
+  { immediate: true }
 )
 
 // Close the modal

@@ -24,6 +24,12 @@ export default defineEventHandler(async (event) => {
   const gameMode = query.gameMode || '' // Optional game mode filter
   const perspective = query.perspective || '' // Optional perspective filter
   const theme = query.theme || '' // Optional theme filter
+  const ids = query.ids
+    ? query.ids
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean)
+    : null
 
   // Map filters
   const genreId = genre ? getIdByName(genre, genres) : null
@@ -42,6 +48,34 @@ export default defineEventHandler(async (event) => {
     return { error: 'Missing IGDB credentials in environment variables' }
   }
 
+  // If ids param is present, fetch by IDs only
+  if (ids && ids.length > 0) {
+    try {
+      const response = await axios.post(
+        API_URL,
+        `fields name, category, platforms.name, platforms.platform_logo.image_id, 
+                themes.name, genres.name, cover.image_id, slug, total_rating, rating,
+                aggregated_rating, rating_count, game_modes.name, dlcs, expansions,
+                player_perspectives.name, first_release_date, release_dates.date, storyline, summary, 
+                version_parent, parent_game, cover.url, screenshots.url;
+         where id = (${ids.join(',')});
+         limit ${ids.length};
+        `,
+        {
+          headers: {
+            'Client-ID': CLIENT_ID,
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+          },
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('IGDB fetch by ids error:', error)
+      return { error: 'Failed to fetch games by ids from IGDB' }
+    }
+  }
+
+  // Otherwise, do normal search/filter
   const filters = []
   if (platformId) filters.push(`platforms = {${platformId}}`)
   if (genreId) filters.push(`genres = {${genreId}}`)

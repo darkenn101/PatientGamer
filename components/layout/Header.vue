@@ -20,19 +20,91 @@
         <li><a>Pricing</a></li>
         <li><a>Blog</a></li>
         <li><a>Contact</a></li>
+        <li>
+          <select
+            class="select select-sm w-full"
+            v-model="selectedTheme"
+            @change="changeTheme"
+          >
+            <option v-for="theme in themes" :key="theme" :value="theme">
+              {{ theme }}
+            </option>
+          </select>
+        </li>
         <a class="btn btn-sm btn-primary">Log in</a>
       </ul>
     </div>
 
     <!-- Menu for desktop -->
-    <ul class="hidden menu sm:menu-horizontal gap-2">
+    <ul class="hidden menu sm:menu-horizontal gap-2 items-center">
       <li><a>About</a></li>
       <li><a>Pricing</a></li>
       <li><a>Blog</a></li>
       <li><a>Contact</a></li>
+      <li>
+        <select
+          class="select select-sm"
+          v-model="selectedTheme"
+          @change="changeTheme"
+        >
+          <option v-for="theme in themes" :key="theme" :value="theme">
+            {{ theme }}
+          </option>
+        </select>
+      </li>
       <a class="btn btn-sm btn-primary">Log in</a>
     </ul>
   </nav>
 </template>
 
-<script setup></script>
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const themes = [
+  'emerald',
+  'light',
+  'dark',
+  'cupcake',
+  'bumblebee',
+  'corporate',
+  'synthwave',
+  'retro',
+  'cyberpunk',
+  'valentine',
+  'halloween',
+  'garden',
+  'forest',
+  'aqua',
+  'lofi',
+  'pastel',
+  'fantasy',
+  'wireframe',
+  'black',
+  'luxury',
+  'dracula',
+  'cmyk',
+  'autumn',
+  'business',
+  'acid',
+  'lemonade',
+  'night',
+  'coffee',
+  'winter',
+]
+const selectedTheme = ref('emerald')
+
+const changeTheme = () => {
+  document.documentElement.setAttribute('data-theme', selectedTheme.value)
+  localStorage.setItem('theme', selectedTheme.value)
+}
+
+onMounted(() => {
+  const saved = localStorage.getItem('theme')
+  if (saved && themes.includes(saved)) {
+    selectedTheme.value = saved
+    document.documentElement.setAttribute('data-theme', saved)
+  } else {
+    document.documentElement.setAttribute('data-theme', selectedTheme.value)
+  }
+})
+</script>

@@ -154,7 +154,7 @@
       <div
         v-for="game in displayedGames"
         :key="game.id"
-        class="card card-side bg-base-100 shadow-xl w-full lg:max-w-[600px] mx-auto"
+        class="card card-side bg-base-100 shadow-xl w-full lg:max-w-[600px] mx-auto border-color-gray-200 border"
       >
         <figure class="w-[200px] flex-shrink-0">
           <img
@@ -174,10 +174,10 @@
           </p>
           <div class="card-actions justify-end">
             <button class="btn btn-primary" @click="openGameModal(game)">
-              {{ game.inCollection ? 'In Collection' : 'Add to Collection' }}
+              {{ game.inCollection ? 'In Collection' : '+ Collection' }}
             </button>
             <button class="btn btn-secondary" @click="addToWishlist(game.id)">
-              {{ game.inWishlist ? 'In Wishlist' : 'Add to Wishlist' }}
+              {{ game.inWishlist ? 'In Wishlist' : '+ Wishlist' }}
             </button>
           </div>
         </div>

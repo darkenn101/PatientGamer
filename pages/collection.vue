@@ -61,7 +61,6 @@
       </button>
     </div>
   </div>
-  {{ isModalOpen }}
   <AddToCollectionModal
     v-if="isModalOpen"
     :showModal="isModalOpen"

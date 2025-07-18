@@ -17,11 +17,14 @@
         v-model="selectedProgressFilter"
         class="select select-bordered w-full sm:w-1/4"
       >
-        <option value="">All</option>
-        <option value="Unfinished">Unfinished</option>
+        <option value="">Select Progress</option>
+        <option value="Backlog">Backlog</option>
         <option value="Playing">Playing</option>
-        <option value="On-Hold">On-Hold</option>
+        <option value="Unplayed DLC">Unplayed DLC</option>
         <option value="Completed">Completed</option>
+        <option value="Replay">Replay</option>
+        <option value="Paused">Paused</option>
+        <option value="Abandoned">Abandoned</option>
       </select>
     </div>
 
@@ -39,7 +42,7 @@
         </thead>
         <tbody>
           <tr
-            v-for="game in backlogGames"
+            v-for="game in sortedBacklogGames"
             :key="game.id"
             class="hover:bg-gray-100"
           >
@@ -62,17 +65,26 @@
             </td>
 
             <!-- Actions -->
-            <td>
+            <td class="flex gap-2 items-center">
               <select
                 :value="game.progress"
                 class="select select-sm select-bordered"
                 @change="updateGameProgress(game.id, $event.target.value)"
               >
-                <option value="Unfinished">Unfinished</option>
+                <option value="">All</option>
                 <option value="Playing">Playing</option>
-                <option value="On-Hold">On-Hold</option>
-                <option value="Completed">Completed</option>
+                <option value="Backlog">Backlog</option>
+                <option value="Unplayed DLC">Unplayed DLC</option>
+                <option value="Replay">Replay</option>
+                <option value="Paused">Paused</option>
               </select>
+              <button
+                class="btn btn-error btn-sm ml-2"
+                title="Remove from Backlog"
+                @click="removeFromBacklog(game.id)"
+              >
+                Remove
+              </button>
             </td>
           </tr>
         </tbody>
@@ -117,10 +129,28 @@ const supabase = useSupabaseClient()
 const userId = ref('') // User's ID
 const backlogGames = ref([]) // Games in the backlog
 const currentPage = ref(1) // Current page number
-const limit = 5 // Games per page
+const limit = 20 // Games per page
 const totalGames = ref(0) // Total number of backlog games
 const searchQuery = ref('') // Search query
 const selectedProgressFilter = ref('') // Progress filter
+
+// Computed: sort by progress order
+const progressOrder = {
+  Playing: 1,
+  Paused: 2,
+  'Unplayed DLC': 3,
+  Backlog: 4,
+  Replay: 5,
+}
+const sortedBacklogGames = computed(() => {
+  return [...backlogGames.value].sort((a, b) => {
+    const aOrder = progressOrder[a.progress] || 99
+    const bOrder = progressOrder[b.progress] || 99
+    if (aOrder !== bOrder) return aOrder - bOrder
+    // fallback: alphabetical by name
+    return (a.data?.name || '').localeCompare(b.data?.name || '')
+  })
+})
 
 // Fetch backlog games
 const fetchBacklogGames = async () => {
@@ -128,7 +158,7 @@ const fetchBacklogGames = async () => {
     const offset = (currentPage.value - 1) * limit // Calculate offset for pagination
 
     // Query games in the backlog
-    const { data, count, error } = await supabase
+    let query = supabase
       .from('collections')
       .select(
         `
@@ -142,10 +172,24 @@ const fetchBacklogGames = async () => {
         `,
         { count: 'exact' }
       )
-      .eq('user_id', userId.value) // Filter by user ID
-      .eq('progress', selectedProgressFilter.value) // Filter by progress
-      .ilike('data->>name', `%${searchQuery.value}%`) // Search by game name
-      .range(offset, offset + limit - 1) // Apply pagination
+      .eq('user_id', userId.value)
+      .ilike('data->>name', `%${searchQuery.value}%`)
+
+    // If a filter is selected, filter by that progress
+    if (selectedProgressFilter.value) {
+      query = query.eq('progress', selectedProgressFilter.value)
+    } else {
+      // Otherwise, fetch all relevant progress states
+      query = query.in('progress', [
+        'Backlog',
+        'Playing',
+        'Unplayed DLC',
+        'Replay',
+        'Paused',
+      ])
+    }
+
+    const { data, count, error } = await query.range(offset, offset + limit - 1)
 
     if (error) {
       console.error('Error fetching backlog games:', error.message)
@@ -190,6 +234,25 @@ const updateGameProgress = async (gameId, newProgress) => {
     fetchBacklogGames()
   } catch (err) {
     console.error('Unexpected error updating game progress:', err)
+  }
+}
+
+// Mark game as Completed instead of deleting
+const removeFromBacklog = async (gameId) => {
+  try {
+    const { error } = await supabase
+      .from('collections')
+      .update({ progress: 'Completed' })
+      .eq('id', gameId)
+      .eq('user_id', userId.value)
+
+    if (error) {
+      console.error('Error marking game as completed:', error.message)
+      return
+    }
+    fetchBacklogGames()
+  } catch (err) {
+    console.error('Unexpected error marking game as completed:', err)
   }
 }
 
